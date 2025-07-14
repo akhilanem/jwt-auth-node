@@ -8,6 +8,20 @@ require('dotenv').config();
 console.log("SECRET_KEY:", process.env.SECRET_KEY); 
 
 const SECRET_KEY = process.env.SECRET_KEY;
+const REFRESH_TOKEN = process.env.REFRESH_TOKEN;
+
+let refreshTokens = []; // Store refresh tokens in memory (for demo purposes, use a database in production)
+
+
+const generateAccessToken = (user) => {
+    return jwt.sign({ id: user.id, role: user.role }, SECRET_KEY, { expiresIn: '1m' });
+};
+
+const generateRefreshToken = (user) => {
+    const refreshToken = jwt.sign({ id: user.id, role: user.role }, REFRESH_TOKEN, { expiresIn: '7d' });
+    refreshTokens.push(refreshToken); // Store the refresh token
+    return refreshToken;
+};
 
 const app = express();
 app.use(express.json());  
@@ -26,9 +40,35 @@ app.post("/login",(req,res) => {
         return res.status(401).send("Invalid Password");
     }
 
-    const token = jwt.sign({id: user.id, role: user.role}, SECRET_KEY, {expiresIn: '1h'});
-    res.json({token});
-})
+    const accessToken = generateAccessToken(user);
+    const refreshToken = generateRefreshToken(user);
+    res.json({
+        accessToken,
+        refreshToken
+    });
+});
+
+app.post("/refreshtoken", (req, res) => {
+    const { refreshToken } = req.body;
+
+    if (!refreshToken || !refreshTokens.includes(token)) {
+        return res.status(403).send("Refresh Token is not valid");
+    }
+    try{
+        const userData = jwt.verify(refreshToken, REFRESH_TOKEN);
+        if (!userData) {
+            return res.status(403).send("Invalid Refresh Token");
+        }
+        const newAccessToken = generateAccessToken(userData);
+        return res.json({
+            accessToken: newAccessToken
+        });
+    }
+    catch(err){
+        return res.status(403).send("Refresh token expired or invalid")
+    }
+    
+}); 
 
 app.get("/admin", authMiddleware(SECRET_KEY,"admin"),(req,res) => {
     res.send("Welcome Admin! You have access.");
