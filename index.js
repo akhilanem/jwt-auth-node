@@ -3,6 +3,7 @@ const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const users = require('./users');
 const authMiddleware = require('./authMiddleware');
+const logMiddleware = require("./logMiddleware");
 require('dotenv').config();
 
 console.log("SECRET_KEY:", process.env.SECRET_KEY); 
@@ -25,6 +26,7 @@ const generateRefreshToken = (user) => {
 
 const app = express();
 app.use(express.json());  
+app.use(logMiddleware);
 
 app.post("/login",(req,res) => {
     const {username,password} = req.body;
@@ -51,7 +53,7 @@ app.post("/login",(req,res) => {
 app.post("/refreshtoken", (req, res) => {
     const { refreshToken } = req.body;
 
-    if (!refreshToken || !refreshTokens.includes(token)) {
+    if (!refreshToken || !refreshTokens.includes(refreshToken)) {
         return res.status(403).send("Refresh Token is not valid");
     }
     try{
