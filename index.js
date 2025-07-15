@@ -6,7 +6,7 @@ const authMiddleware = require('./authMiddleware');
 const logMiddleware = require("./logMiddleware");
 require('dotenv').config();
 
-console.log("SECRET_KEY:", process.env.SECRET_KEY); 
+//console.log("SECRET_KEY:", process.env.SECRET_KEY); 
 
 const SECRET_KEY = process.env.SECRET_KEY;
 const REFRESH_TOKEN = process.env.REFRESH_TOKEN;
@@ -83,6 +83,17 @@ app.get("/user", authMiddleware(SECRET_KEY,"user"),(req,res) => {
 app.get("/", (req, res) => {
     res.send("Welcome to the JWT Authentication Example");
 });
+
+
+//Error Handling 
+app.use((err,req,res,next) => {
+    console.error(err.stack);
+    res.status(err.statusCode || 500).json({
+        error: true,
+        message: err.message || "Something went wrong!"
+    });
+});
+
 
 app.listen(3000, () => {
     console.log('Server is running on port 3000');
